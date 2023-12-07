@@ -6,7 +6,7 @@ import PromptCard from "./PromptCard";
 
 const PromptCardList = ({ data, handleTagClick }) => {
   return (
-    <div className='mt-16 prompt_layout'>
+    <div className="mt-16 prompt_layout">
       {data.map((post) => (
         <PromptCard
           key={post._id}
@@ -19,10 +19,57 @@ const PromptCardList = ({ data, handleTagClick }) => {
 };
 
 const Feed = () => {
-  const [searchText, setSearchText] = useState("");
   const [posts, setPosts] = useState([]);
 
-  const handleSearchChange = () => {};
+  const [searchText, setSearchText] = useState("");
+  const [searchTimeout, setSearchTimeout] = useState(null);
+  const [searchedResults, setSearchedResults] = useState([]);
+
+  const filterPrompts = (searchtext) => {
+    const regex = new RegExp(searchtext, "i"); // 'i' flag for case-insensitive search
+    return posts.filter(
+      (item) =>
+        regex.test(item.creator.username) ||
+        regex.test(item.tag) ||
+        regex.test(item.prompt)
+    );
+  };
+
+  const handleSearchChange = (e) => {
+    clearTimeout(searchTimeout);
+    setSearchText(e.target.value);
+
+    // debounce method
+    setSearchTimeout(
+      setTimeout(() => {
+        const searchResult = filterPrompts(e.target.value);
+        setSearchedResults(searchResult);
+      }, 500)
+    );
+  };
+
+  // const handleSearchChange = (e) => {
+  //   setSearchText(e.target.value)
+  //   // console.log(searchText)
+  // };
+
+  const submitSearch = (e) => {
+    e.preventDefault();
+    console.log("Submit enter!");
+
+    // const filteredPosts = posts.map((post) => post.prompt.includes("test3"))
+
+    const filteredPosts = posts.filter((post) =>
+      post.prompt.toLowerCase().includes(searchText.toLowerCase())
+    );
+
+    setPosts(filteredPosts);
+
+    // if(filteredPosts.length > 0 ){
+    //   setPosts(filteredPosts)
+    //   console.log("found post ")
+    // }
+  };
 
   const fetchPosts = async () => {
     const response = await fetch("/api/prompt");
@@ -35,10 +82,9 @@ const Feed = () => {
     fetchPosts();
   }, []);
 
-
   return (
     <section className="feed">
-      <from className="relative w-full flex-center">
+      <form className="relative w-full flex-center">
         <input
           type="text"
           placeholder="Search for tag / username"
@@ -47,8 +93,12 @@ const Feed = () => {
           required
           className="search_input"
         />
-      </from>
-      <PromptCardList data={posts} handleTagClick={() => {}} />
+      </form>
+      {searchText ? (
+        <PromptCardList data={searchedResults} handleTagClick={() => {}} />
+      ) : (
+        <PromptCardList data={posts} handleTagClick={() => {}} />
+      )}
     </section>
   );
 };
